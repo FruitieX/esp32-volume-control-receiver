@@ -183,7 +183,7 @@ static void example_espnow_task(void *pvParameter)
                     double x = payload / 4096.0;
                     double val_d;
 
-                    // https://www.desmos.com/calculator/7jdp6fxktt
+                    // https://www.desmos.com/calculator/4fgaygsonp
                     if (x < 0.07)
                     {
                         val_d = 0.0 + x * 10.0;
