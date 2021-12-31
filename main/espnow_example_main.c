@@ -174,6 +174,7 @@ static void example_espnow_task(void *pvParameter)
 
                 ret = example_espnow_data_parse(recv_cb->data, recv_cb->data_len, &recv_state, &recv_seq, &recv_magic);
                 uint32_t payload = ((example_espnow_data_t *)recv_cb->data)->payload;
+                uint16_t bat_mv = ((example_espnow_data_t *)recv_cb->data)->bat_mv;
                 free(recv_cb->data);
 
                 if (ret == EXAMPLE_ESPNOW_DATA_BROADCAST) {
@@ -214,7 +215,7 @@ static void example_espnow_task(void *pvParameter)
                     uint8_t val = val_d * (double) max_val;
                     val = fmin(max_val, val);
 
-                    printf("x: %f, val_d: %f, val: %d\n", x, val_d, val);
+                    printf("x: %f, val_d: %f, val: %d, bat_mv: %d\n", x, val_d, val, bat_mv);
 
                     // ESP_LOGI(TAG, "Writing value: %d", val);
                     ds3502_write(0x00, &(val), 1);
@@ -279,8 +280,8 @@ static esp_err_t example_espnow_init(void)
     send_param->magic = esp_random();
     send_param->count = CONFIG_ESPNOW_SEND_COUNT;
     send_param->delay = CONFIG_ESPNOW_SEND_DELAY;
-    send_param->len = 14;
-    send_param->buffer = malloc(14);
+    send_param->len = 16;
+    send_param->buffer = malloc(16);
     if (send_param->buffer == NULL) {
         ESP_LOGE(TAG, "Malloc send buffer fail");
         free(send_param);
