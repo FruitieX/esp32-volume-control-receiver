@@ -194,42 +194,59 @@ static void example_espnow_task(void *pvParameter)
                     // Store input value for logging
                     double input = x;
 
-                    //double val_d;
-
+                    // ALTERNATIVE 1:
                     // https://www.desmos.com/calculator/4fgaygsonp
-                    //if (x < 0.07)
-                    //{
-                    //    val_d = 0.0 + x * 10.0;
-                    //}
-                    //else if (x < 0.11)
-                    //{
-                    //    val_d = 0.7 + (x - 0.07) * 2.0;
-                    //}
-                    //else if (x < 0.15)
-                    //{
-                    //    val_d = 0.78 + (x - 0.11) * 0.7;
-                    //}
-                    //else
-                    //{
-                    //    val_d = 0.808 + (x - 0.15) * 0.2258823;
-                    //}
+                    // if (x < 0.07)
+                    // {
+                    //     x = 0.0 + x * 10.0;
+                    // }
+                    // else if (x < 0.11)
+                    // {
+                    //     x = 0.7 + (x - 0.07) * 2.0;
+                    // }
+                    // else if (x < 0.15)
+                    // {
+                    //     x = 0.78 + (x - 0.11) * 0.7;
+                    // }
+                    // else
+                    // {
+                    //     x = 0.808 + (x - 0.15) * 0.2258823;
+                    // }
 
-                    // x = log_100(x) + 1;
-                    x = log(x) / log(100.0) + 1.0;
+                    // ALTERNATIVE 2:
+                    // https://www.desmos.com/calculator/deam9qirta
+                    // x = log(x) / log(100.0) + 1.0;
+
+                    // ALTERNATIVE 3:
+                    // https://www.desmos.com/calculator/bzrj5hpqnd
+                    // x = log(x + 0.05) / log(100.0) + 0.98940535;
+
+                    // ALTERNATIVE 4:
+                    // https://www.desmos.com/calculator/piezu00gfd
+                    // x = log(x + 0.1) / log(100.0) + 0.97;
+
+                    // ALTERNATIVE 5:
+                    // https://www.desmos.com/calculator/vsc17h4ss0
+                    x = log(x + 0.01) / log(1000.0) + 0.99;
+
+                    // Set volume to zero if input is under a treshold
+                    // if (input < 0.01) {
+                    //     x = 0.0;
+                    // }
 
                     // Make sure x is non negative
                     x = fmax(0.0, x);
 
                     // Speaker & ear protection
-                    uint8_t max_val = 100;
+                    uint8_t max_val = 110;
 
-                    // Scale value from [0, 1[ to [0, max_val]
+                    // Scale value from [0, 1[ to [0, max_val[
                     uint8_t val = x * (double) max_val;
 
                     // And make damn sure it's not over that
                     val = fmin(max_val, val);
 
-                    // Flip value from [0, max_val] to [max_val, 0]
+                    // Flip value from [0, max_val[ to ]max_val, 0]
                     // NOTE: only needed for log digipot with inverted range
                     // val = 127 - val;
 
@@ -334,23 +351,25 @@ static void i2c_master_init() {
 }
 
 void app_main(void) {
-    #ifndef ESP32DEV
-    gpio_config_t io_conf = {};
-    io_conf.intr_type = GPIO_INTR_DISABLE;
-    io_conf.mode = GPIO_MODE_OUTPUT;
-    io_conf.pin_bit_mask = (1ULL << 13);
-    io_conf.pull_down_en = 0;
-    io_conf.pull_up_en = 0;
-    gpio_config(&io_conf);
-    gpio_set_level(13, 1);
+    // Blink LED to show signs of life
 
-    vTaskDelay(500 / portTICK_RATE_MS);
-    gpio_set_level(13, 0);
-    vTaskDelay(500 / portTICK_RATE_MS);
-    gpio_set_level(13, 1);
-    vTaskDelay(500 / portTICK_RATE_MS);
-    gpio_set_level(13, 0);
-    #endif
+    // #ifndef ESP32DEV
+    // gpio_config_t io_conf = {};
+    // io_conf.intr_type = GPIO_INTR_DISABLE;
+    // io_conf.mode = GPIO_MODE_OUTPUT;
+    // io_conf.pin_bit_mask = (1ULL << 13);
+    // io_conf.pull_down_en = 0;
+    // io_conf.pull_up_en = 0;
+    // gpio_config(&io_conf);
+    // gpio_set_level(13, 1);
+
+    // vTaskDelay(500 / portTICK_RATE_MS);
+    // gpio_set_level(13, 0);
+    // vTaskDelay(500 / portTICK_RATE_MS);
+    // gpio_set_level(13, 1);
+    // vTaskDelay(500 / portTICK_RATE_MS);
+    // gpio_set_level(13, 0);
+    // #endif
 
     i2c_master_init();
     ds3502_init();
