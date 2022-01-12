@@ -31,8 +31,16 @@
 #include "driver/i2c.h"
 #include "math.h"
 
+// #define ESP32DEV
+
+#ifdef ESP32DEV
 #define I2C_SCL_IO				22	             /*!< gpio number for I2C master clock */
 #define I2C_SDA_IO				21	             /*!< gpio number for I2C master data  */
+#else
+#define I2C_SCL_IO				9	             /*!< gpio number for I2C master clock */
+#define I2C_SDA_IO				8	             /*!< gpio number for I2C master data  */
+#endif
+
 #define I2C_FREQ_HZ				400000           /*!< I2C master clock frequency */
 #define I2C_PORT_NUM			I2C_NUM_0        /*!< I2C port number for master dev */
 #define I2C_TX_BUF_DISABLE  	0                /*!< I2C master do not need buffer */
@@ -182,40 +190,51 @@ static void example_espnow_task(void *pvParameter)
 
                     // Scale value from [0, 4096[ to [0, 1[
                     double x = payload / 4096.0;
-                    double val_d;
+
+                    // Store input value for logging
+                    double input = x;
+
+                    //double val_d;
 
                     // https://www.desmos.com/calculator/4fgaygsonp
-                    if (x < 0.07)
-                    {
-                        val_d = 0.0 + x * 10.0;
-                    }
-                    else if (x < 0.11)
-                    {
-                        val_d = 0.7 + (x - 0.07) * 2.0;
-                    }
-                    else if (x < 0.15)
-                    {
-                        val_d = 0.78 + (x - 0.11) * 0.7;
-                    }
-                    else
-                    {
-                        val_d = 0.808 + (x - 0.15) * 0.2258823;
-                    }
+                    //if (x < 0.07)
+                    //{
+                    //    val_d = 0.0 + x * 10.0;
+                    //}
+                    //else if (x < 0.11)
+                    //{
+                    //    val_d = 0.7 + (x - 0.07) * 2.0;
+                    //}
+                    //else if (x < 0.15)
+                    //{
+                    //    val_d = 0.78 + (x - 0.11) * 0.7;
+                    //}
+                    //else
+                    //{
+                    //    val_d = 0.808 + (x - 0.15) * 0.2258823;
+                    //}
 
-                    // val_d = log_1000(x) + 1;
-                    // val_d = log(val_d) / log(1000.0) + 1.0;
+                    // x = log_100(x) + 1;
+                    x = log(x) / log(100.0) + 1.0;
 
-                    // Make sure val_d is non negative
-                    val_d = fmax(0.0, val_d);
+                    // Make sure x is non negative
+                    x = fmax(0.0, x);
 
                     // Speaker & ear protection
-                    uint8_t max_val = 95;
+                    uint8_t max_val = 100;
 
                     // Scale value from [0, 1[ to [0, max_val]
-                    uint8_t val = val_d * (double) max_val;
+                    uint8_t val = x * (double) max_val;
+
+                    // And make damn sure it's not over that
                     val = fmin(max_val, val);
 
-                    printf("x: %f, val_d: %f, val: %d, bat_mv: %d\n", x, val_d, val, bat_mv);
+                    // Flip value from [0, max_val] to [max_val, 0]
+                    // NOTE: only needed for log digipot with inverted range
+                    // val = 127 - val;
+
+                    printf("input: %f, x: %f, val: %d, bat_mv: %d\n", input, x, val, bat_mv);
+                    // printf("input: %f, x: %f, val: %d, bat_mv: %d, t = %d\n", input, x, val, bat_mv, esp_log_early_timestamp());
 
                     // ESP_LOGI(TAG, "Writing value: %d", val);
                     ds3502_write(0x00, &(val), 1);
@@ -315,6 +334,24 @@ static void i2c_master_init() {
 }
 
 void app_main(void) {
+    #ifndef ESP32DEV
+    gpio_config_t io_conf = {};
+    io_conf.intr_type = GPIO_INTR_DISABLE;
+    io_conf.mode = GPIO_MODE_OUTPUT;
+    io_conf.pin_bit_mask = (1ULL << 13);
+    io_conf.pull_down_en = 0;
+    io_conf.pull_up_en = 0;
+    gpio_config(&io_conf);
+    gpio_set_level(13, 1);
+
+    vTaskDelay(500 / portTICK_RATE_MS);
+    gpio_set_level(13, 0);
+    vTaskDelay(500 / portTICK_RATE_MS);
+    gpio_set_level(13, 1);
+    vTaskDelay(500 / portTICK_RATE_MS);
+    gpio_set_level(13, 0);
+    #endif
+
     i2c_master_init();
     ds3502_init();
 
