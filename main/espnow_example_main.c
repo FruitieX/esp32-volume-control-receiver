@@ -99,6 +99,9 @@ static const char *TAG = "espnow_example";
 static xQueueHandle s_example_espnow_queue;
 
 static uint8_t s_example_broadcast_mac[ESP_NOW_ETH_ALEN] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+static uint8_t sender_mac[ESP_NOW_ETH_ALEN] = {0xDE, 0xAD, 0xBE, 0xEF, 0x01, 0x23};
+
+#define CHECK_SENDER_MAC
 
 /* WiFi should start before using ESPNOW */
 static void example_wifi_init(void)
@@ -179,6 +182,13 @@ static void example_espnow_task(void *pvParameter)
             case EXAMPLE_ESPNOW_RECV_CB:
             {
                 example_espnow_event_recv_cb_t *recv_cb = &evt.info.recv_cb;
+
+#ifdef CHECK_SENDER_MAC
+                if (memcmp(recv_cb->mac_addr, sender_mac, ESP_NOW_ETH_ALEN) != 0) {
+                    ESP_LOGI(TAG, "Received data from unknown MAC address: "MACSTR"", MAC2STR(recv_cb->mac_addr));
+                    break;
+                }
+#endif
 
                 ret = example_espnow_data_parse(recv_cb->data, recv_cb->data_len, &recv_state, &recv_seq, &recv_magic);
                 uint32_t payload = ((example_espnow_data_t *)recv_cb->data)->payload;
